@@ -3,43 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Pelanggan Pra V.2.0</title>
+    <title>Data Pelanggan Pra V.3.0</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #eef;
+            background-color: #ffffff; /* Mengubah background menjadi putih bersih seperti digambar */
             color: #333;
             padding: 20px;
         }
         .input-container {
             margin-bottom: 20px;
+            max-width: 100%;
         }
         .input-container label {
             display: block;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             font-weight: bold;
-        }
-        .input-container input, .input-container textarea {
-            padding: 10px;
-            margin-bottom: 10px;
             font-size: 16px;
+        }
+        .input-container input, .input-container textarea, .input-container select {
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            font-family: monospace; /* Menggunakan monospace untuk input agar mirip format code */
             box-sizing: border-box;
             width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #fff;
         }
-        .input-container button {
-            padding: 10px 15px;
+        .input-container textarea {
+            resize: vertical;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px; /* Memberi jarak rapi antar tombol */
+            margin-top: 5px;
+        }
+        .button-group button {
+            padding: 12px 20px;
             font-size: 16px;
             cursor: pointer;
-            margin-top: 10px;
-            background-color: #4CAF50;
             color: white;
             border: none;
             border-radius: 4px;
         }
+        .btn-green {
+            background-color: #4CAF50;
+        }
+        .btn-green:hover {
+            background-color: #45a049;
+        }
+        .btn-blue {
+            background-color: #2196F3;
+        }
+        .btn-blue:hover {
+            background-color: #1e87db;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
+            margin-top: 20px;
             table-layout: auto;
         }
         th, td {
@@ -53,13 +77,13 @@
             color: white;
         }
         
-        /* STYLE GAMBAR (FULL FILL SESUAI REQUEST SEBELUMNYA) */
+        /* STYLE GAMBAR */
         img {
             width: 300px;
             height: 300px;
             border: 1px solid #ccc;
             border-radius: 1px;
-            object-fit: fill; /* Memenuhi kotak sepenuhnya */
+            object-fit: fill;
             background-color: #f0f0f0; 
             cursor: pointer;
         }
@@ -78,6 +102,12 @@
         }
         .logout-btn {
             background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 20px;
         }
     </style>
 </head>
@@ -87,21 +117,30 @@
         <input type="text" id="username" placeholder="Username">
         <label for="password">Password:</label>
         <input type="password" id="password" placeholder="Password">
-        <button onclick="login()">Login</button>
+        <button onclick="login()" class="btn-green" style="padding: 10px 15px;">Login</button>
     </div>
 
     <button id="logout-btn" class="logout-btn" onclick="logout()" style="display:none;">Logout</button>
 
     <div class="input-container" id="data-container" style="display:none;">
-        <label for="id-input">Masukkan Data Pelanggan (format: <strong>IDPEL_NomorMeter_Arus_Tegangan_SisaPulsa</strong>, pisahkan dengan baris baru):</label>
-        <textarea id="id-input" rows="5" placeholder="Contoh:&#10;224400263727_32130276390_0.4_220_123"></textarea>
+        
+        <label for="id-input">Masukkan Data Pelanggan (format: IDPEL_NomorMeter_Arus_Tegangan_SisaPulsa):</label>
+        <textarea id="id-input" rows="6" placeholder="Contoh:&#10;224400263727_32130276390_0.4_220_123"></textarea>
+
+        <label for="sumber-foto">Sumber Foto:</label>
+        <select id="sumber-foto">
+            <option value="AP2T">AP2T</option>
+            <option value="PORTAL_ACMT">PORTAL ACMT</option>
+        </select>
         
         <label for="year-input">Masukkan Tahun (BLTH):</label>
         <input type="text" id="year-input" placeholder="Contoh: 202602">
         
-        <button onclick="generateTable()">Tampilkan Data</button>
-        <button onclick="validateImages()" style="background-color: #2196F3;">Validasi Kelengkapan Foto</button>
-        <button onclick="exportToExcel()">Export to Excel</button>
+        <div class="button-group">
+            <button class="btn-green" onclick="generateTable()">Tampilkan Data</button>
+            <button class="btn-blue" onclick="validateImages()">Validasi Kelengkapan Foto</button>
+            <button class="btn-green" onclick="exportToExcel()">Export to Excel</button>
+        </div>
     </div>
     
     <div id="zoomModal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.8); text-align:center;">
@@ -191,8 +230,14 @@
         function generateTable() {
             const inputs = document.getElementById('id-input').value.trim().split('\n').map(input => input.trim());
             const year = document.getElementById('year-input').value.trim();
+            const sumberFoto = document.getElementById('sumber-foto').value; 
             const tbody = document.getElementById('images-table').getElementsByTagName('tbody')[0];
             tbody.innerHTML = '';
+
+            let baseUrl = "https://ap2t.pln.co.id/acmt/";
+            if (sumberFoto === "PORTAL_ACMT") {
+                baseUrl = "https://portalapp.iconpln.co.id/acmt/";
+            }
 
             inputs.forEach(input => {
                 if (input && year) {
@@ -263,7 +308,7 @@
                     // 6-8 Images
                     const arusImgCell = document.createElement('td');
                     const arusImg = document.createElement('img');
-                    const urlArus = `https://portalapp.iconpln.co.id/acmt/DisplayBlobServlet6?idpel=${idpel}&nomor_meter=${nomorMeter}&fotoke=null&blth=${year}&isPhoto=null`;
+                    const urlArus = `${baseUrl}DisplayBlobServlet6?idpel=${idpel}&nomor_meter=${nomorMeter}&fotoke=null&blth=${year}&isPhoto=null`;
                     arusImg.src = urlArus;
                     arusImg.alt = `Gambar Arus ${idpel}`;
                     arusImg.onclick = () => openZoomModal(urlArus);
@@ -272,7 +317,7 @@
 
                     const teganganImgCell = document.createElement('td');
                     const teganganImg = document.createElement('img');
-                    const urlTegangan = `https://portalapp.iconpln.co.id/acmt/DisplayBlobServlet5?idpel=${idpel}&nomor_meter=${nomorMeter}&fotoke=null&blth=${year}&isPhoto=null`;
+                    const urlTegangan = `${baseUrl}DisplayBlobServlet5?idpel=${idpel}&nomor_meter=${nomorMeter}&fotoke=null&blth=${year}&isPhoto=null`;
                     teganganImg.src = urlTegangan;
                     teganganImg.alt = `Gambar Tegangan ${idpel}`;
                     teganganImg.onclick = () => openZoomModal(urlTegangan);
@@ -281,7 +326,7 @@
 
                     const pulsaImgCell = document.createElement('td');
                     const pulsaImg = document.createElement('img');
-                    const urlPulsa = `https://portalapp.iconpln.co.id/acmt/DisplayBlobServlet4?idpel=${idpel}&nomor_meter=${nomorMeter}&fotoke=null&blth=${year}&isPhoto=null`;
+                    const urlPulsa = `${baseUrl}DisplayBlobServlet4?idpel=${idpel}&nomor_meter=${nomorMeter}&fotoke=null&blth=${year}&isPhoto=null`;
                     pulsaImg.src = urlPulsa;
                     pulsaImg.alt = `Gambar Sisa Pulsa ${idpel}`;
                     pulsaImg.onclick = () => openZoomModal(urlPulsa);
@@ -289,7 +334,7 @@
                     row.appendChild(pulsaImgCell);
 
                     // 9 Foto Persil
-                    const urlPersil = `https://portalapp.iconpln.co.id/acmt/DisplayBlobServlet7?idpel=${idpel}&unitup=`; 
+                    const urlPersil = `${baseUrl}DisplayBlobServlet7?idpel=${idpel}&unitup=`; 
                     const persilImgCell = document.createElement('td');
                     const persilImg = document.createElement('img');
                     persilImg.src = urlPersil;
@@ -312,28 +357,22 @@
         }
 
         function exportToExcel() {
-            // Pastikan validasi dijalankan dulu agar data kolom status ada (opsional, tapi disarankan)
             validateImages();
 
             const table = document.getElementById('images-table');
             const rows = table.querySelectorAll('tbody tr');
             const data = [];
 
-            // UPDATE: Menambahkan Header "Status Validasi"
             const header = ["Keterangan", "IDPEL", "Nomor Meter", "Arus", "Tegangan", "Sisa Pulsa", "Gambar Arus", "Gambar Tegangan", "Gambar Sisa Pulsa", "Foto Persil", "Text Input", "Status Validasi"];
 
             rows.forEach(row => {
                 const rowData = [];
-                // Query semua 'td' di baris tersebut
                 const cells = row.querySelectorAll('td');
                 
-                // Pastikan loop mencakup semua kolom (termasuk index 11 jika ada)
                 cells.forEach((cell, index) => {
                     if (index === 10) { 
-                        // Kolom Text Input
                         rowData.push(cell.querySelector('input') ? cell.querySelector('input').value : "");
                     } else if (index === 0) { 
-                        // Kolom Checkbox
                         const checkboxes = cell.querySelectorAll('input[type="checkbox"]');
                         const checkedValues = [];
                         checkboxes.forEach(checkbox => {
@@ -343,10 +382,8 @@
                         });
                         rowData.push(checkedValues.join(', '));
                     } else if (index === 11) {
-                        // UPDATE: Kolom Status Validasi (Sekarang diambil teksnya)
                         rowData.push(cell.textContent.trim());
                     } else {
-                        // Kolom Biasa
                         rowData.push(cell.textContent.trim());
                     }
                 });
